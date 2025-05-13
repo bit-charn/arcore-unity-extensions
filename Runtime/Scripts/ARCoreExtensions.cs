@@ -88,6 +88,32 @@ namespace Google.XR.ARCoreExtensions
         [HideInInspector]
         public OnChooseXRCameraConfigurationEvent OnChooseXRCameraConfiguration;
 
+        public bool TryGetLatestFrameMetadata(CameraMetadataTag tag, List<CameraMetadataValue> resultList)
+        {
+            if (!TryGetLatestFrame(out XRCameraFrame frame))
+            {
+                return false;
+            }
+
+            if (currentARCoreSessionHandle == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            IntPtr imageMetadataHandle = IntPtr.Zero;
+            if (!frame.AcquireImageMetadata(ref imageMetadataHandle))
+            {
+                return false;
+            }
+
+            bool hasMetadata = CameraMetadataApi.TryGetValues(currentARCoreSessionHandle, imageMetadataHandle, tag, resultList);
+
+            CameraMetadataApi.Release(imageMetadataHandle);
+            frame.ReleaseFrame();
+
+            return hasMetadata;
+        }
+
 #if !UNITY_IOS || GEOSPATIAL_IOS_SUPPORT
         // The max number of frames we will wait for a valid session handle to report analytics.
         internal const int _frameTimeoutForSessionHandle = 60;
